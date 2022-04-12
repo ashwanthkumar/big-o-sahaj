@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -57,4 +58,24 @@ type Ring struct {
 	Hasher  Hasher
 	Regions []Region
 	// TODO: Add options for when the Regions would be split
+}
+
+// Core DB abstraction that provides the Get and Put interface for our KV Store
+type DB struct {
+	Ring Ring
+	// TODO: Add options for dir, and other required params
+}
+
+var (
+	ErrKeyNotFound = fmt.Errorf("requested key is not found")
+)
+
+// Get a value as []byte if it exists, else ErrKeyNotFound is returned
+func (db *DB) Get(input string) ([]byte, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+// Write a Key,Value into the KV Store
+func (db *DB) Put(input string, value []byte) error {
+	return fmt.Errorf("not implemented")
 }
