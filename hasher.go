@@ -1,27 +1,34 @@
 package main
 
-import "crypto/sha512"
+import (
+	"crypto/sha512"
+	"hash"
+)
 
-type Hasher interface {
-	Hash(input string) ([]byte, error)
-	Size() int
+type Hasher struct {
+	Underlying hash.Hash
 }
 
-type Sha512Hasher struct{}
-
-func (h *Sha512Hasher) Hash(input string) ([]byte, error) {
-	hasher := sha512.New()
-	_, err := hasher.Write([]byte(input))
+func (h *Hasher) Hash(input string) ([]byte, error) {
+	h.Underlying.Reset()
+	_, err := h.Underlying.Write([]byte(input))
 	if err != nil {
 		return nil, err
 	}
-	return hasher.Sum(nil), nil
+	hash := h.Underlying.Sum(nil)
+	return hash, nil
 }
 
-func (h *Sha512Hasher) Size() int {
-	return sha512.Size
+func (h *Hasher) Size() int {
+	return h.Underlying.Size()
 }
 
+// New Hasher implementation using SHA-512 from crypto std package
 func NewSha512Hasher() Hasher {
-	return &Sha512Hasher{}
+	return NewCustomHasher(sha512.New())
+}
+
+// New Hasher using any hash.Hash implementation
+func NewCustomHasher(underlying hash.Hash) Hasher {
+	return Hasher{Underlying: underlying}
 }
