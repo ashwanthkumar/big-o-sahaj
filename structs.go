@@ -14,8 +14,9 @@ type Entry struct {
 // and write data in chunks than individual records. We would do sequential reads of
 // each key during Lookup within a block to find the right entry.
 // On Disk, this would of the format:
-// [keySize][valueSize][Key][Value]
+// [fixedHashSize][keySize][valueSize][Hash][Key][Value]
 type Block struct {
+	Entries []Entry
 }
 
 // List represents an SST file inside a region. SST is a sorted collection of Blocks
