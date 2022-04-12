@@ -10,4 +10,3 @@ My full thought process before the implementation can be found as part of this t
 
 ## License
 https://www.apache.org/licenses/LICENSE-2.0.txt
-
