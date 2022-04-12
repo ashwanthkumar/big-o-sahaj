@@ -1,6 +1,6 @@
 # suuchi-store
 
-![build](https://github.com/ashwanthkumar/suuchi-store/actions/workflows/build.yaml/badge.svg)
+[![build](https://github.com/ashwanthkumar/suuchi-store/workflows/build/badge.svg)](https://github.com/ashwanthkumar/suuchi-store/actions/workflows/build.yaml)
 [![codecov](https://codecov.io/gh/ashwanthkumar/suuchi-store/branch/main/graph/badge.svg?token=3KOM4HAJ1O)](https://codecov.io/gh/ashwanthkumar/suuchi-store)
 
 
