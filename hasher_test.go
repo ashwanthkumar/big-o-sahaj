@@ -1,4 +1,4 @@
-package hasher
+package main
 
 import (
 	"crypto/sha512"

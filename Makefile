@@ -22,7 +22,6 @@ test-only:
 
 test:
 	go test ${TESTFLAGS} -coverprofile=main.txt github.com/ashwanthkumar/suuchi-store/
-	go test ${TESTFLAGS} -coverprofile=store.txt github.com/ashwanthkumar/suuchi-store/hasher
 
 test-ci: test
 	${GOPATH}/bin/gocovmerge *.txt > coverage.txt
