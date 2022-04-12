@@ -1,2 +1,11 @@
+# General ignores
 db/
 .DS_Store
+
+# Build artifacts
+suuchi-store
+
+# Test coverage files generated as part of test-ci
+*.out
+*.html
+*.txt
