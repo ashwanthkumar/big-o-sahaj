@@ -1,16 +1,18 @@
 package main
 
 import (
-	"bytes"
+	"sync"
 	"sync/atomic"
 
 	"github.com/huandu/skiplist"
 )
 
 type Memstore struct {
+	Hasher *Hasher
+
+	rwLock sync.RWMutex
 	// items: Uint64 (hash) -> skipList(key,value)
 	items      skiplist.SkipList
-	Hasher     *Hasher
 	memorySize uint64 // use atomic to change the value
 }
 
@@ -19,6 +21,9 @@ func (m *Memstore) Put(key []byte, value []byte) error {
 	if err != nil {
 		return err
 	}
+	m.rwLock.Lock()
+	defer m.rwLock.Unlock()
+
 	item, present := m.items.GetValue(hash)
 	hashSize := 0 // we assume the hash size is already accounted for
 	if !present {
@@ -38,25 +43,18 @@ func (m *Memstore) Get(key []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	m.rwLock.RLock()
+	defer m.rwLock.RUnlock()
 	item, present := m.items.GetValue(hash)
 	if !present {
 		return nil, ErrKeyNotFound
 	}
 	existingSkipList := item.(*skiplist.SkipList)
-	i := existingSkipList.Front()
-	for {
-		// exit condition
-		if i == nil {
-			break
-		}
-		if bytes.Equal(i.Key().([]byte), key) {
-			return i.Value.([]byte), nil
-		} else {
-			i = i.Next()
-		}
+	item, present = existingSkipList.GetValue(key)
+	if !present {
+		return nil, ErrKeyNotFound
 	}
-
-	return nil, ErrKeyNotFound
+	return item.([]byte), nil
 }
 
 func (m *Memstore) MemSize() uint64 {
