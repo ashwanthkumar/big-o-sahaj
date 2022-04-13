@@ -8,7 +8,7 @@ import (
 
 func Test64BitXXHash(t *testing.T) {
 	hasher := NewXXHash()
-	hash, err := hasher.Hash("Hello World")
+	hash, err := hasher.Hash([]byte("Hello World"))
 	assert.NoError(t, err)
 
 	expected := uint64(0x6334d20719245bc2)

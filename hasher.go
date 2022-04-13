@@ -10,7 +10,7 @@ type Hasher struct {
 	CreateHash func() hash.Hash64
 }
 
-func (h *Hasher) Hash(input string) (uint64, error) {
+func (h *Hasher) Hash(input []byte) (uint64, error) {
 	hasher := h.CreateHash()
 	_, err := hasher.Write([]byte(input))
 	if err != nil {
