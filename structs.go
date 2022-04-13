@@ -6,7 +6,7 @@ import (
 )
 
 type Entry struct {
-	Hash  []byte
+	Hash  uint64
 	Key   []byte
 	Value []byte
 }
@@ -28,8 +28,8 @@ type Block struct {
 type List struct {
 	Id       int    // greater id, means more recent file
 	Filename string // filename on disk
-	Start    []byte
-	End      []byte
+	Start    uint64
+	End      uint64
 	Blocks   []Block
 	// - Add BloomFilter per list to improve read performance
 	// - Add hash to block offsets for better identifying the right block faster
@@ -43,8 +43,8 @@ type List struct {
 // the given key exist among them.
 type Region struct {
 	Id    int
-	Start []byte // inclusive
-	End   []byte // exclusive
+	Start uint64 // inclusive
+	End   uint64 // exclusive
 	Lists []List
 	// TODO: Add the options for tuning Regions in here
 }
@@ -76,6 +76,6 @@ func (db *DB) Get(input string) ([]byte, error) {
 }
 
 // Write a Key,Value into the KV Store
-func (db *DB) Put(input string, value []byte) error {
+func (db *DB) Put(input []byte, value []byte) error {
 	return fmt.Errorf("not implemented")
 }
