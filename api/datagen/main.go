@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"compress/flate"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -72,11 +74,17 @@ func main() {
 	// I guess this is the value that gets changed for increasing the payload from 1Kb -> 20Kb?
 	measureValueStringGen := rapid.StringOfN(rapid.RuneFrom(basicRunes), 32, 20480, -1)
 
-	f, err := os.Create(fmt.Sprintf("%d-%d.payload", totalProbes, totalPayloadsToGenerate))
+	outputFilename := fmt.Sprintf("%d-%d.payload.gz", totalProbes, totalPayloadsToGenerate)
+	f, err := os.Create(outputFilename)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	w := bufio.NewWriter(f)
+	gf, err := gzip.NewWriterLevel(f, flate.BestCompression)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	w := bufio.NewWriterSize(gf, 32768)
+	fmt.Printf("Writing the output into %s\n", outputFilename)
 
 	for i := 0; i < int(totalPayloadsToGenerate); i++ {
 		payload := make(map[string]interface{})
@@ -125,8 +133,15 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	err = gf.Close()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	err = f.Close()
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	fmt.Printf("Finished writing %d records to the output\n", totalPayloadsToGenerate)
 }
