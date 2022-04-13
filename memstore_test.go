@@ -10,11 +10,16 @@ import (
 func TestSimpleAddAndGetOnMemstore(t *testing.T) {
 	hasher := NewXXHash()
 	memstore := NewMemstore(&hasher)
-	err := memstore.Put([]byte("Hello"), []byte("World"))
+	key := []byte("Hello")
+	value := []byte("World")
+	err := memstore.Put(key, value)
 	assert.NoError(t, err)
-	value, err := memstore.Get([]byte("Hello"))
+	valueFromMemstore, err := memstore.Get(key)
 	assert.NoError(t, err)
-	assert.Equal(t, []byte("World"), value)
+	assert.Equal(t, value, valueFromMemstore)
+
+	expectedMemSize := len(key) + len(value) + 64 /* size of hash in memory */
+	assert.Equal(t, uint64(expectedMemSize), memstore.MemSize())
 }
 
 func TestReturnErrKeyNotFoundWhenKeyIsNotFound(t *testing.T) {
