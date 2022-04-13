@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -17,17 +18,20 @@ import (
 // produce values and finally build a JSON. I'm planning to build a few sets of 100K, 1M & 10M
 // payloads that we can use with Vegeta (https://github.com/tsenart/vegeta) to generating the load
 func main() {
-	if len(os.Args) < 3 {
-		panic(fmt.Sprintf("Usage: %s <number of probes> <total count of payloads>"+"\nWe would try to distribute the total payloads equally amongst the probes", os.Args[0]))
+	if len(os.Args) < 2 {
+		fmt.Printf("Usage: %s <number of probes>"+"\nWe would generate enough payloads for each probe to be able to run for upto 2 hours at 10 seconds delay", os.Args[0])
+		os.Exit(1)
 	}
 	totalProbes, err := strconv.ParseInt(os.Args[1], 10, 32)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	totalCount, err := strconv.ParseInt(os.Args[2], 10, 32)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	// Instead of getting this as an input, we know each probe sends data every 10 seconds
+	// The problem statement defines the time duration of the test to be 120 minutes (aka)
+	// 7200 seconds. So if we've our totalProbes, we will atleast need to generate
+	// totalProbes * (7200 / 10) payloads assuming equal distribution among the probes, for us to
+	// evaluate the system as described in the spec.
+	totalPayloadsToGenerate := totalProbes * 720
 
 	probeIds := make([]string, totalProbes)
 	probeIdGen := rapid.StringMatching(`[a-zA-Z0-9]{3,100}`)
@@ -66,9 +70,15 @@ func main() {
 		basicRunes = append(basicRunes, rune(i))
 	}
 	// I guess this is the value that gets changed for increasing the payload from 1Kb -> 20Kb?
-	measureValueStringGen := rapid.StringOfN(rapid.RuneFrom(basicRunes), 0, 20480, -1)
+	measureValueStringGen := rapid.StringOfN(rapid.RuneFrom(basicRunes), 32, 20480, -1)
 
-	for i := 0; i < int(totalCount); i++ {
+	f, err := os.Create(fmt.Sprintf("%d-%d.payload", totalProbes, totalPayloadsToGenerate))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	w := bufio.NewWriter(f)
+
+	for i := 0; i < int(totalPayloadsToGenerate); i++ {
 		payload := make(map[string]interface{})
 		payload["probeId"] = probeIds[i%len(probeIds)] // round robin among all the probeIds that we have
 		payload["eventId"] = uuid.NewString()
@@ -95,8 +105,28 @@ func main() {
 		payload["messageData"] = measurements
 
 		jsonInBytes, err := json.Marshal(payload)
+		jsonInBytes = append(jsonInBytes, "\n"...)
 		if err == nil {
-			fmt.Println(string(jsonInBytes))
+			_, err = w.Write(jsonInBytes)
+			if err != nil {
+				log.Fatalln(err)
+			}
 		}
+		if i%1000 == 0 {
+			err = w.Flush()
+			if err != nil {
+				log.Fatalln(err)
+			}
+		}
+	}
+
+	err = w.Flush()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	err = f.Close()
+	if err != nil {
+		log.Fatalln(err)
 	}
 }
