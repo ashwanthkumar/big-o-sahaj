@@ -12,8 +12,9 @@ type Memstore struct {
 
 	rwLock sync.RWMutex
 	// items: Uint64 (hash) -> skipList(key,value)
-	items      skiplist.SkipList
-	memorySize uint64 // use atomic to change the value
+	items         skiplist.SkipList
+	numberOfItems uint64 // use atomic to change the value
+	memorySize    uint64 // use atomic to change the value
 }
 
 func (m *Memstore) Put(key []byte, value []byte) error {
@@ -31,7 +32,9 @@ func (m *Memstore) Put(key []byte, value []byte) error {
 		hashSize = 64
 	}
 	existingSkipList := item.(*skiplist.SkipList)
-	// TODO: we'll move the value from skiplist to vLog and store the vlog pointer in here instead
+	if _, present := existingSkipList.GetValue(key); !present {
+		atomic.AddUint64(&m.numberOfItems, uint64(1))
+	}
 	existingSkipList.Set(key, value)
 	m.items.Set(hash, existingSkipList)
 	atomic.AddUint64(&m.memorySize, uint64(len(key)+len(value)+hashSize))
