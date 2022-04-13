@@ -35,7 +35,7 @@ func (m *Memstore) Get(key []byte) ([]byte, error) {
 	}
 	item, present := m.items.GetValue(hash)
 	if !present {
-		item = skiplist.New(skiplist.Bytes)
+		return nil, ErrKeyNotFound
 	}
 	existingSkipList := item.(*skiplist.SkipList)
 	i := existingSkipList.Front()
@@ -50,6 +50,7 @@ func (m *Memstore) Get(key []byte) ([]byte, error) {
 			i = i.Next()
 		}
 	}
+
 	return nil, ErrKeyNotFound
 }
 

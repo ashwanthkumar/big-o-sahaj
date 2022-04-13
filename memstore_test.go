@@ -17,6 +17,13 @@ func TestSimpleAddAndGetOnMemstore(t *testing.T) {
 	assert.Equal(t, []byte("World"), value)
 }
 
+func TestReturnErrKeyNotFoundWhenKeyIsNotFound(t *testing.T) {
+	hasher := NewXXHash()
+	memstore := NewMemstore(&hasher)
+	_, err := memstore.Get([]byte("Hello"))
+	assert.Equal(t, err, ErrKeyNotFound)
+}
+
 func TestMemstoreAddAndGetForKeyAndValueSpecs(t *testing.T) {
 	hasher := NewXXHash()
 	memstore := NewMemstore(&hasher)
