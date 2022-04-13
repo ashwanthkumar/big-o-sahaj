@@ -1,34 +1,31 @@
 package main
 
 import (
-	"crypto/sha512"
 	"hash"
+
+	"github.com/cespare/xxhash/v2"
 )
 
 type Hasher struct {
-	CreateHash func() hash.Hash
+	CreateHash func() hash.Hash64
 }
 
-func (h *Hasher) Hash(input string) ([]byte, error) {
+func (h *Hasher) Hash(input string) (uint64, error) {
 	hasher := h.CreateHash()
 	_, err := hasher.Write([]byte(input))
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-	hash := hasher.Sum(nil)
+	hash := hasher.Sum64()
 	return hash, nil
 }
 
-func (h *Hasher) Size() int {
-	return h.CreateHash().Size()
-}
-
 // New Hasher implementation using SHA-512 from crypto std package
-func NewSha512Hasher() Hasher {
-	return NewCustomHasher(func() hash.Hash { return sha512.New() })
+func NewXXHash() Hasher {
+	return NewCustomHasher(func() hash.Hash64 { return xxhash.New() })
 }
 
 // New Hasher using any hash.Hash implementation
-func NewCustomHasher(underlying func() hash.Hash) Hasher {
+func NewCustomHasher(underlying func() hash.Hash64) Hasher {
 	return Hasher{CreateHash: underlying}
 }
