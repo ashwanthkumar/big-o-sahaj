@@ -9,3 +9,5 @@ suuchi-store
 *.out
 *.html
 *.txt
+# Created by rapid property testing in case of failures
+*.fail
