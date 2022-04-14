@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"sync"
+	"sync/atomic"
+	"time"
 )
 
 // type Entry struct {
@@ -63,19 +66,52 @@ import (
 type DB struct {
 	// Ring Ring
 	// TODO: Add options for dir, and other required params
-	memstore *Memstore
+	lastTimeTs uint32
+	rwmutex    sync.RWMutex
+	dir        string
+	memstore   *Memstore2
+}
+
+func (db *DB) monitorMemtable() {
+	ticker := time.NewTicker(1 * time.Second)
+	for range ticker.C {
+		// TODO: make 300K configurable
+		if db.memstore.numRecords > 300_000 {
+			fmt.Println("Flushing the current memstore and creating a new one")
+			newTime := atomic.AddUint32(&db.lastTimeTs, 1)
+			db.rwmutex.Lock()
+			newMemstore, err := NewMemstore2(db.dir, newTime)
+			if err != nil {
+				panic(err)
+			}
+			oldMemstore := db.memstore
+			db.memstore = newMemstore
+			db.lastTimeTs = newTime
+			db.rwmutex.Unlock()
+
+			oldMemstore.Finish()
+			oldMemstore = nil // for GC
+		}
+	}
 }
 
 var (
 	ErrKeyNotFound = fmt.Errorf("requested key is not found")
 )
 
-func NewDb() *DB {
-	hasher := NewXXHash()
-	memstore := NewMemstore(&hasher)
-	return &DB{
-		memstore: &memstore,
+func NewDb(dir string) (*DB, error) {
+	memstore, err := NewMemstore2(dir, 0)
+	if err != nil {
+		return nil, err
 	}
+
+	db := DB{
+		dir:      dir,
+		memstore: memstore,
+	}
+	go db.monitorMemtable()
+
+	return &db, nil
 }
 
 // Get a value as []byte if it exists, else ErrKeyNotFound is returned
@@ -84,6 +120,8 @@ func (db *DB) Get(input string) ([]byte, error) {
 }
 
 // Write a Key,Value into the KV Store
-func (db *DB) Put(input []byte, value []byte) error {
-	return fmt.Errorf("not implemented")
+func (db *DB) Put(key string, value ValueStruct) error {
+	db.rwmutex.RLock()
+	defer db.rwmutex.RUnlock()
+	return db.memstore.Set(key, value)
 }

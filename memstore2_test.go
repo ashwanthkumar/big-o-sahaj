@@ -14,35 +14,32 @@ import (
 // Replace the below with TestMemstore2WithWalStress(t testing.T) to actually run the stress test
 // You might want to increase the go test timeout accordingly so the stress test can complete
 func Memstore2WithWalStressTest(t *testing.T) {
-	const size = 10_000_000
+	// func TestMemstore2WithWalStressTest(t *testing.T) {
+	const size = 1_000_000
 	PrintMemUsage()
 
-	lastFileTs := rand.Uint32()
-	memstore, err := NewMemstore2("test_db", lastFileTs)
+	db, err := NewDb("test_db")
 	assert.NoError(t, err)
 
 	keyGen := rapid.StringMatching("[a-zA-Z0-9]{100}")
 	filename := "bfa032537a3d8cb1b79d161afe00819f"
 
 	for i := 0; i < size; i++ {
-		if i%10_000 == 0 {
-			fmt.Println("Processed", i, "item")
-		}
+		// if i%10_000 == 0 {
+		// fmt.Println("Processed", i, "item")
+		// }
 		value := ValueStruct{
 			Filename:  filename,
 			Offset:    rand.Int63(),
 			Timestamp: time.Now().UnixMilli(),
 		}
-		memstore.Set(keyGen.Example().(string), value)
+		db.Put(keyGen.Example().(string), value)
 	}
 	fmt.Println("Done Writing", size, "entries to Memstore")
 	PrintMemUsage()
 
 	runtime.GC()
 	PrintMemUsage()
-
-	memstore.Close()
-
 }
 
 // PrintMemUsage outputs the current, total and OS memory being used. As well as the number
