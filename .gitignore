@@ -1,6 +1,7 @@
 # General ignores
 db/
 .DS_Store
+test_db/
 
 # Build artifacts
 suuchi-store
