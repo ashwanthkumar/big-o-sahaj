@@ -9,10 +9,11 @@ import (
 
 type DB struct {
 	// TODO: Add options for dir, and other required params
-	lastTimeTs uint32
-	rwmutex    sync.RWMutex
-	dir        string
-	memstore   *Memstore2
+	lastTimeTs   uint32
+	rwmutex      sync.RWMutex
+	dir          string
+	memstore     *Memstore2
+	prevMemstore *Memstore2
 }
 
 func (db *DB) monitorMemtable() {
@@ -27,13 +28,15 @@ func (db *DB) monitorMemtable() {
 			if err != nil {
 				panic(err)
 			}
-			oldMemstore := db.memstore
+			db.prevMemstore = db.memstore
 			db.memstore = newMemstore
 			db.lastTimeTs = newTime
 			db.rwmutex.Unlock()
 
-			oldMemstore.Finish()
-			oldMemstore = nil // for GC
+			db.rwmutex.RLock()
+			db.prevMemstore.Finish()
+			db.prevMemstore = nil // for GC
+			db.rwmutex.RUnlock()
 		}
 	}
 }
@@ -59,9 +62,16 @@ func OpenDb(dir string) (*DB, error) {
 	return &db, nil
 }
 
-// Get a value as []byte if it exists, else ErrKeyNotFound is returned
-func (db *DB) Get(input string) ([]byte, error) {
-	return nil, fmt.Errorf("not implemented")
+// TODO: Basic Memstore-only based lookup
+func (db *DB) Get(key string) (ValueStruct, bool) {
+	db.rwmutex.RLock()
+	defer db.rwmutex.RUnlock()
+	value, present := db.memstore.Get(key)
+	if !present && db.prevMemstore != nil {
+		value, present = db.prevMemstore.Get(key)
+		return value, present
+	}
+	return value, present
 }
 
 // Write a Key,Value into the KV Store
