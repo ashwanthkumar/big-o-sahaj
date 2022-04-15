@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/gob"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"sync/atomic"
@@ -86,13 +87,35 @@ func (m *Memstore2) Finish() {
 		panic(err)
 	}
 	defer sstFile.Close()
+	var startKey []byte
+	var lastKey []byte
+	// Writing the Data
 	sstWriter := bufio.NewWriterSize(sstFile, 8*4096)
 	for iter.Next() {
+		if len(startKey) == 0 {
+			startKey = iter.Key()
+		}
 		binary.Write(sstWriter, binary.LittleEndian, uint32(len(iter.Key())))
 		binary.Write(sstWriter, binary.LittleEndian, uint32(len(iter.Value())))
 		sstWriter.Write(iter.Key())
 		sstWriter.Write(iter.Value())
+		lastKey = iter.Key()
 	}
+
+	// Writing the metadata (smallest Key and the largest key)
+	indexOffset, err := sstFile.Seek(0, io.SeekCurrent)
+	if err != nil {
+		panic(err)
+	}
+	indexOffset += int64(sstWriter.Size())
+	encoder = gob.NewEncoder(sstWriter)
+	encoder.Encode(FileMetadata{StartKey: startKey, LastKey: lastKey})
+	// write the offset where we have the index at the end of the file
+	// this should ideally be a fixed size footer that contains offsets
+	// to various parts of the file for exact seeking and querying the
+	// required information.
+	binary.Write(sstWriter, binary.LittleEndian, indexOffset)
+
 	err = sstWriter.Flush()
 	if err != nil {
 		panic(err)

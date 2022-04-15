@@ -62,6 +62,11 @@ import (
 // 	// TODO: Add options for when the Regions would be split
 // }
 
+type FileMetadata struct {
+	StartKey []byte
+	LastKey  []byte
+}
+
 // Core DB abstraction that provides the Get and Put interface for our KV Store
 type DB struct {
 	// Ring Ring
