@@ -9,10 +9,13 @@ import (
 
 type DB struct {
 	// TODO: Add options for dir, and other required params
-	lastTimeTs   uint32
-	rwmutex      sync.RWMutex
-	dir          string
-	memstore     *Memstore2
+	lastTimeTs uint32
+	rwmutex    sync.RWMutex
+	dir        string
+	memstore   *Memstore2
+	// we need this while the recently full memstore is being flushed,
+	// it would not be available for querying from the disk. This value
+	// can be nil, so you might want to guard it with that.
 	prevMemstore *Memstore2
 }
 
@@ -35,8 +38,13 @@ func (db *DB) monitorMemtable() {
 
 			db.rwmutex.RLock()
 			db.prevMemstore.Finish()
-			db.prevMemstore = nil // for GC
 			db.rwmutex.RUnlock()
+
+			// we need this because Get tries to read it from here which can use SEG faults
+			// in some unique race condition case.
+			db.rwmutex.Lock()
+			db.prevMemstore = nil // for GC
+			db.rwmutex.Unlock()
 		}
 	}
 }
