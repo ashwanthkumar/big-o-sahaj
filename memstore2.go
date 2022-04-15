@@ -67,15 +67,17 @@ func (m *Memstore2) Finish() {
 	m.flushTimer.Stop()
 	m.wal.Sync()
 	m.wal.Close()
-	// write
+
+	// extsort.Options.Dedupe should be nil, if it's not then we drop the duplicate key values
+	// if we move to start hash value as the key then it might cause problems.
 	sorter := extsort.New(&extsort.Options{})
 	defer sorter.Close()
-	buf := bytes.NewBuffer(nil)
-	encoder := gob.NewEncoder(buf)
+	tempBufferForEncodingValue := bytes.NewBuffer(nil)
+	encoder := gob.NewEncoder(tempBufferForEncodingValue)
 	for tuple := range m.data.IterBuffered() {
 		encoder.Encode(tuple.Val)
-		sorter.Put([]byte(tuple.Key), buf.Bytes())
-		buf.Reset()
+		sorter.Put([]byte(tuple.Key), tempBufferForEncodingValue.Bytes())
+		tempBufferForEncodingValue.Reset()
 	}
 	iter, err := sorter.Sort()
 	if err != nil {
