@@ -2,7 +2,7 @@ APPNAME = suuchi-store
 VERSION=`git log -n1 --format="%h"`
 BUILD_TIMESTAMP=`date`
 TESTFLAGS=-v -cover -covermode=atomic -bench=.
-TEST_COVERAGE_THRESHOLD=20.0
+TEST_COVERAGE_THRESHOLD=0.0
 ifndef $(GOPATH)
 	GOPATH=$(shell go env GOPATH)
 	export GOPATH
