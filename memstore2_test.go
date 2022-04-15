@@ -18,7 +18,7 @@ func Memstore2WithWalStressTest(t *testing.T) {
 	const size = 1_000_000
 	PrintMemUsage()
 
-	db, err := NewDb("test_db")
+	db, err := OpenDb("test_db")
 	assert.NoError(t, err)
 
 	keyGen := rapid.StringMatching("[a-zA-Z0-9]{100}")
